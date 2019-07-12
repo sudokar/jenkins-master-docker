@@ -1,0 +1,9 @@
+amazon-ecs
+git
+gitlab-plugin
+gitlab-hook
+gitlab-merge-request-jenkins
+simple-theme-plugin
+thinBackup
+active-directory
+matrix-auth

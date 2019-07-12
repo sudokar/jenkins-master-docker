@@ -1,0 +1,35 @@
+plugins {
+    id 'com.bmuschko.docker-remote-api' version '4.6.1'
+    id 'base'
+}
+
+ext {
+  jenkins_version = '2.164.1'
+  jenkins_image = "jenkins/jenkins:$jenkins_version-alpine"
+}
+
+import com.bmuschko.gradle.docker.tasks.image.Dockerfile
+import com.bmuschko.gradle.docker.tasks.image.DockerBuildImage
+
+def javaOpts = '''-Dorg.eclipse.jetty.server.Request.maxFormContentSize=100000000 -Dorg.apache.commons.jelly.tags.fmt.timeZone=UTC -Dhudson.diyChunking=false -Djenkins.install.runSetupWizard=false  -Djava.awt.headless=true -Dhudson.slaves.NodeProvisioner.initialDelay=0 -Dhudson.slaves.NodeProvisioner.MARGIN=50 -Dhudson.slaves.NodeProvisioner.MARGIN0=0.85'''
+
+task createDockerfile(type: Dockerfile) {
+    from "$jenkins_image"
+    label(['maintainer': 'sudokar <sudokar@yahoo.com>'])
+    environmentVariable('JENKINS_REF', '/usr/share/jenkins/ref')
+    copyFile('jenkins-home/plugins.txt', '$JENKINS_REF/')
+    runCommand('/usr/local/bin/install-plugins.sh < $JENKINS_REF/plugins.txt')
+    environmentVariable('JAVA_OPTS', javaOpts)
+    copyFile('jenkins-home/init.groovy.d', '$JENKINS_REF/init.groovy.d/')
+}
+
+task copyJenkinsHomeDir(type: Copy) {
+    from "jenkins-home/"
+    into "$buildDir/docker/jenkins-home"
+}
+
+task buildImage(type: DockerBuildImage) {
+    dependsOn createDockerfile
+    dependsOn copyJenkinsHomeDir
+    tags.add("gaming-test/jenkins-master:$jenkins_version-alpine")
+}
